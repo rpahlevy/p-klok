@@ -48,11 +48,13 @@ $app->post('/', function (Request $req, Response $res, array $args) {
         $result = $stmt->execute(["sn" => $i_sn]);
         if ($result == -1) {
             $row = $stmt->fetch();
+				/*
             $mqtt = new Bluerhinos\phpMQTT($MQTT_HOST, $MQTT_PORT, $MQTT_CLIENT);
             $mqtt->connect();
             $mqtt->publish($row["slug"], $body);
             $mqtt->close();
             $this->logger->info("published: topic=" . $row["slug"] . "msg=" . $body);
+				*/
         }
     } catch (Exception $e) {
         $ret["ok"] = "false";
@@ -70,15 +72,20 @@ $app->post('/', function (Request $req, Response $res, array $args) {
             unset($data['wl_scale']);
             $data['wlevel'] = $wlevel; // dalam centimeter
         }
-        // Khusus: Temporary, Data Krisak di kirim ke bbws-bsolo.net
+        // Khusus: Temporary, Data bbws-bsolo di kirim ke bbws-bsolo.net
         // HTTP POST dg Guzzle
         // $base_uri = 'http://localhost:3000';
-        $base_uri = 'http://iot.bbws-bsolo.net/sensors';
-        $this->logger->info('base_uri:' . $base_uri);
-        $client = new Client();
-        $r = $client->request('POST', $base_uri, [
-            'json' => $data
-        ]);
+		if (isset($row["slug"]) && $row["slug"] == 'bbws-bsolo') {
+			//$base_uri = 'http://iot.bbws-bsolo.net/sensors';
+			$base_uri = 'https://iot-bsolo.prinus.workers.dev/';
+			$client = new Client();
+			$r = $client->request('POST', $base_uri, [
+				'json' => $data
+			]);
+			$code = $r->getStatusCode(); // 200
+			$reason = $r->getReasonPhrase(); // OK
+			$this->logger->info('Result: '. $code .' '. $reason);
+		}
         //$this->logger->info('Request POST :' . $base_uri .' $result: ' . $r);
 
     } catch (Exception $e) {
